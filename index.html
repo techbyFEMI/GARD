@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>GARD — AI Contract Risk Detector</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
   :root {
     --blue: #1E3A8A;
@@ -701,6 +702,68 @@
     line-height: 1.5;
   }
 
+  /* Replacement language box */
+  .replacement-box {
+    background: var(--blue-faint);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--blue);
+  }
+
+  .box-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .replacement-box .box-label { color: var(--blue); }
+  .message-box .box-label { color: #0f766e; }
+
+  .box-text {
+    font-size: 12px;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .replacement-box .box-text { color: var(--blue); }
+  .message-box .box-text { color: #0f766e; }
+
+  /* Suggested message box */
+  .message-box {
+    background: var(--teal-light);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 0;
+    border-left: 3px solid var(--teal);
+  }
+
+  /* Copy button */
+  .copy-btn {
+    background: none;
+    border: 1px solid currentColor;
+    border-radius: var(--radius-pill);
+    padding: 2px 10px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .copy-btn:hover { opacity: 1; }
+  .copy-btn.copied { opacity: 1; }
+
   /* Disclaimer */
   .disclaimer {
     background: var(--blue-faint);
@@ -772,6 +835,14 @@
   .fade-up-3 { animation-delay: 0.3s; opacity: 0; }
   .fade-up-4 { animation-delay: 0.4s; opacity: 0; }
   .fade-up-5 { animation-delay: 0.5s; opacity: 0; }
+
+  /* SVG icon sizing */
+  .stat-icon svg { color: var(--blue); }
+  .step-icon svg { color: var(--teal); }
+  .suggestion-icon svg { color: #0f766e; }
+  .section-title svg { color: var(--blue); }
+  .history-title svg { color: var(--blue); margin-right: 4px; }
+  .disclaimer svg { color: var(--blue); flex-shrink: 0; margin-top: 2px; }
 
   /* Mobile responsive */
   @media (max-width: 400px) {
@@ -889,18 +960,147 @@
     gap: 12px;
   }
 
+  /* Swipe to delete wrapper */
+  .history-item-wrapper {
+    position: relative;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .history-delete-bg {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background: var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+  }
+
+  .history-delete-bg svg {
+    color: white;
+  }
+
   .history-item {
     background: var(--bg);
     border-radius: var(--radius-sm);
     padding: 14px 16px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.3s ease;
     border: 1px solid var(--border);
+    position: relative;
+    z-index: 1;
+    touch-action: pan-y;
+    user-select: none;
   }
 
-  .history-item:hover {
+  .history-item.swiped {
+    transform: translateX(-80px);
+  }
+
+  .history-item:not(.swiped):hover {
     border-color: var(--teal);
     background: var(--teal-light);
+  }
+
+  /* Desktop delete button - hidden on mobile */
+  .history-item:hover .desktop-delete {
+    opacity: 1;
+  }
+
+  .desktop-delete {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    background: var(--red-light);
+    border: 1px solid var(--red);
+    border-radius: var(--radius-pill);
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--red);
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 2;
+  }
+
+  /* Hide desktop delete on touch devices */
+  @media (hover: none) {
+    .desktop-delete { display: none; }
+  }
+
+  /* Confirm delete overlay */
+  .delete-confirm {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 500;
+    display: flex;
+    align-items: flex-end;
+    padding: 24px;
+    display: none;
+  }
+
+  .delete-confirm.active { display: flex; }
+
+  .delete-confirm-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+  }
+
+  .delete-confirm-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .delete-confirm-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .delete-confirm-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn-delete-confirm {
+    flex: 1;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer;
+  }
+
+  .btn-delete-cancel {
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer;
   }
 
   .history-item-top {
@@ -994,36 +1194,36 @@
     </div>
 
     <div class="hero-card fade-up fade-up-2">
-      <div class="hero-tag">✦ AI-Powered Analysis</div>
+      <div class="hero-tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/></svg> AI-Powered Analysis</div>
       <div class="hero-title">Protect your freelance<br>contracts instantly</div>
       <div class="hero-desc">Upload any contract and GARD detects risky clauses, payment traps, and unfair terms — in seconds.</div>
     </div>
 
     <div class="stats-row fade-up fade-up-3">
       <div class="stat-card">
-        <div class="stat-icon">⚠️</div>
+        <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
         <span class="stat-value">6</span>
         <div class="stat-label">Risk Types</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">⚡</div>
+        <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
         <span class="stat-value">&lt;30s</span>
         <div class="stat-label">Analysis</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">🛡️</div>
+        <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
         <span class="stat-value">100%</span>
         <div class="stat-label">Free</div>
       </div>
     </div>
 
-    <div class="section-title fade-up fade-up-4">📄 Upload Your Contract</div>
+    <div class="section-title fade-up fade-up-4"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Your Contract</div>
 
     <div class="error-card" id="errorCard"></div>
 
     <div class="upload-card fade-up fade-up-4" id="uploadCard">
       <input type="file" id="fileInput" accept=".pdf,.docx" onchange="handleFile(event)" />
-      <div class="upload-icon" id="uploadIcon">📄</div>
+      <div class="upload-icon" id="uploadIcon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
       <div class="upload-title" id="uploadTitle">Drop your contract here</div>
       <div class="upload-sub" id="uploadSub">Click to browse or drag and drop your file</div>
       <div class="file-name" id="fileName"></div>
@@ -1034,7 +1234,7 @@
     </div>
 
     <button class="btn-analyze fade-up fade-up-5" id="analyzeBtn" onclick="analyzeContract()" disabled>
-      🔍 Analyze Contract
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Analyze Contract
     </button>
 
     <div class="detect-card fade-up fade-up-5" style="margin-top: 24px;">
@@ -1055,33 +1255,33 @@
 <!-- PAGE 2: LOADING -->
 <div class="page" id="page-loading">
   <div class="loading-page">
-    <div class="loading-orb">🔍</div>
+    <div class="loading-orb"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
     <div class="loading-title">Analyzing your contract</div>
     <div class="loading-sub">GARD is reading every clause and checking for risks. This takes about 20–30 seconds.</div>
     <div class="loading-steps">
       <div class="loading-step" id="lstep1">
-        <div class="step-icon">📄</div>
+        <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
         <div>
           <div class="step-text">Extracting text</div>
           <div class="step-sub">Reading document contents</div>
         </div>
       </div>
       <div class="loading-step" id="lstep2">
-        <div class="step-icon">🧠</div>
+        <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.5 2a4.5 4.5 0 014.5 4.5v.5h1a3 3 0 013 3 3 3 0 01-3 3h-1v.5a4.5 4.5 0 01-9 0V10H4a3 3 0 01-3-3 3 3 0 013-3h.5A4.5 4.5 0 019.5 2z"/></svg></div>
         <div>
           <div class="step-text">AI Analysis</div>
           <div class="step-sub">Scanning for risky clauses</div>
         </div>
       </div>
       <div class="loading-step" id="lstep3">
-        <div class="step-icon">⚖️</div>
+        <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 6l9-3 9 3"/><path d="M3 6l4 8H3m0 0h8"/><path d="M21 6l-4 8h4m0 0h-8"/><line x1="8" y1="21" x2="16" y2="21"/></svg></div>
         <div>
           <div class="step-text">Scoring risks</div>
           <div class="step-sub">Calculating risk levels</div>
         </div>
       </div>
       <div class="loading-step" id="lstep4">
-        <div class="step-icon">📊</div>
+        <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>
         <div>
           <div class="step-text">Building report</div>
           <div class="step-sub">Preparing your analysis</div>
@@ -1095,13 +1295,25 @@
 <div class="page" id="page-results">
   <div class="results-page">
     <div id="resultsContent"></div>
-    <button class="btn-new" onclick="resetApp()">← Analyze Another Contract</button>
+    <button class="btn-new" onclick="resetApp()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Analyze Another Contract</button>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="delete-confirm" id="deleteConfirm">
+  <div class="delete-confirm-box">
+    <div class="delete-confirm-title">Delete this analysis?</div>
+    <div class="delete-confirm-sub">This action cannot be undone.</div>
+    <div class="delete-confirm-actions">
+      <button class="btn-delete-cancel" onclick="cancelDelete()">Cancel</button>
+      <button class="btn-delete-confirm" onclick="confirmDelete()">Delete</button>
+    </div>
   </div>
 </div>
 
 <!-- HISTORY TOGGLE BUTTON -->
 <button class="history-toggle" onclick="openHistory()">
-  🕐 History
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> History
 </button>
 
 <!-- HISTORY OVERLAY -->
@@ -1111,8 +1323,8 @@
 <div class="history-panel" id="historyPanel">
   <div class="history-handle"></div>
   <div class="history-header">
-    <div class="history-title">📂 Analysis History</div>
-    <button class="history-close" onclick="closeHistory()">✕</button>
+    <div class="history-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Analysis History</div>
+    <button class="history-close" onclick="closeHistory()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="history-list" id="historyList">
     <div class="history-loading">Loading history...</div>
@@ -1134,7 +1346,7 @@
     const name = document.getElementById('fileName');
 
     card.classList.add('file-selected');
-    icon.textContent = '✅';
+    icon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
     title.textContent = 'File ready';
     sub.textContent = 'Your contract is loaded and ready for analysis';
     name.textContent = file.name;
@@ -1228,7 +1440,7 @@
     let html = `
       <div class="score-hero ${riskClass} fade-up fade-up-1">
         <div class="score-label">Overall Risk Score</div>
-        <div class="score-value">${score}</div>
+        <div class="score-value">${score}%</div>
         <div class="score-level">${level.charAt(0).toUpperCase() + level.slice(1)} Risk</div>
         <div class="score-summary">${risks.length} risk${risks.length !== 1 ? 's' : ''} detected in your contract</div>
       </div>
@@ -1237,14 +1449,14 @@
     if (data.summary) {
       html += `
         <div class="summary-card fade-up fade-up-2">
-          <div class="section-title" style="margin-bottom: 10px;">📋 Contract Summary</div>
+          <div class="section-title" style="margin-bottom: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Contract Summary</div>
           <div class="summary-text">${data.summary}</div>
         </div>
       `;
     }
 
     if (risks.length > 0) {
-      html += `<div class="section-title fade-up fade-up-3">⚠️ Detected Risks</div>`;
+      html += `<div class="section-title fade-up fade-up-3"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Detected Risks</div>`;
       risks.forEach((risk, i) => {
         const rc = getRiskClass(risk.risk_level);
         html += `
@@ -1255,10 +1467,28 @@
             </div>
             ${risk.clause ? `<div class="risk-clause">"${risk.clause}"</div>` : ''}
             <div class="risk-explanation">${risk.explanation}</div>
-            ${risk.suggestion ? `
-              <div class="suggestion-box">
-                <div class="suggestion-icon">💡</div>
-                <div class="suggestion-text">${risk.suggestion}</div>
+            ${risk.replacement_language ? `
+              <div class="replacement-box">
+                <div class="box-label">
+                  <span>📋 Suggested Contract Wording</span>
+                  <button class="copy-btn" style="color:var(--blue)" onclick="copyText(this, \`${risk.replacement_language.replace(/`/g, "'")}\`)">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    Copy
+                  </button>
+                </div>
+                <div class="box-text">"${risk.replacement_language}"</div>
+              </div>
+            ` : ''}
+            ${risk.suggested_message ? `
+              <div class="message-box">
+                <div class="box-label">
+                  <span>💬 Message to Send Client</span>
+                  <button class="copy-btn" style="color:#0f766e" onclick="copyText(this, \`${risk.suggested_message.replace(/`/g, "'")}\`)">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    Copy
+                  </button>
+                </div>
+                <div class="box-text">${risk.suggested_message}</div>
               </div>
             ` : ''}
           </div>
@@ -1268,7 +1498,7 @@
       html += `
         <div class="summary-card" style="border-left-color: var(--green)">
           <div style="text-align: center; padding: 20px 0;">
-            <div style="font-size: 40px; margin-bottom: 12px;">✅</div>
+            <div style="font-size: 40px; margin-bottom: 12px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5"><path d="M12 2l2.4 7.4L22 12l-7.6 2.6L12 22l-2.4-7.4L2 12l7.6-2.6z"/><polyline points="9 12 11 14 15 10"/></svg></div>
             <div style="font-size: 16px; font-weight: 700; color: #166534;">No major risks detected</div>
             <div style="font-size: 13px; color: var(--muted); margin-top: 6px;">This contract appears to be freelancer-friendly</div>
           </div>
@@ -1278,7 +1508,7 @@
 
     html += `
       <div class="disclaimer fade-up">
-        <div>ℹ️</div>
+        <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><polyline points="11 11 12 11 12 16 13 16"/></svg></div>
         <div class="disclaimer-text">Risk scores are based on general freelance contract best practices. This is not legal advice — consult a lawyer for formal contract review.</div>
       </div>
     `;
@@ -1290,7 +1520,7 @@
     selectedFile = null;
     document.getElementById('fileInput').value = '';
     document.getElementById('uploadCard').classList.remove('file-selected');
-    document.getElementById('uploadIcon').textContent = '📄';
+    document.getElementById('uploadIcon').innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
     document.getElementById('uploadTitle').textContent = 'Drop your contract here';
     document.getElementById('uploadSub').textContent = 'Click to browse or drag and drop your file';
     document.getElementById('fileName').textContent = '';
@@ -1300,6 +1530,23 @@
       el.classList.remove('active', 'done');
     });
     showPage('page-upload');
+  }
+
+  function copyText(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.innerHTML = `
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Copied!
+      `;
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = `
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy
+        `;
+        btn.classList.remove('copied');
+      }, 2000);
+    });
   }
 
   // Drag and drop
@@ -1316,6 +1563,9 @@
     }
   });
   // History functions
+  let pendingDeleteId = null;
+  let activeSwipeItem = null;
+
   async function openHistory() {
     document.getElementById('historyOverlay').classList.add('open');
     document.getElementById('historyPanel').classList.add('open');
@@ -1332,13 +1582,13 @@
     list.innerHTML = '<div class="history-loading">Loading history...</div>';
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/histroy');
+      const res = await fetch('http://127.0.0.1:8000/history');
       const data = await res.json();
 
       if (!data || data.length === 0) {
         list.innerHTML = `
           <div class="history-empty">
-            <div class="history-empty-icon">📭</div>
+            <div class="history-empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div>
             <div>No analyses yet</div>
             <div style="margin-top: 6px; font-size: 11px;">Upload a contract to get started</div>
           </div>
@@ -1349,23 +1599,40 @@
       list.innerHTML = data.map(item => {
         const rc = getRiskClass(item.overall_risk_level);
         return `
-          <div class="history-item" onclick="loadHistoryItem(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-            <div class="history-item-top">
-              <div class="history-filename">${item.filename || 'Unknown file'}</div>
-              <div class="history-badge ${rc}">${rc} risk</div>
+          <div class="history-item-wrapper" id="wrapper-${item.id}">
+            <div class="history-delete-bg" onclick="showDeleteConfirm(${item.id})">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+              </svg>
             </div>
-            <div class="history-meta">
-              <div class="history-date">${item.created_at || ''}</div>
-              <div class="history-score">Score: ${item.overall_risk_score}</div>
+            <div class="history-item" id="item-${item.id}"
+              onclick="handleItemClick(event, ${JSON.stringify(item).replace(/"/g, '&quot;')})"
+            >
+              <button class="desktop-delete" onclick="event.stopPropagation(); showDeleteConfirm(${item.id})">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M9 6V4h6v2"/>
+                </svg>
+                Delete
+              </button>
+              <div class="history-item-top">
+                <div class="history-filename">${item.filename || 'Unknown file'}</div>
+                <div class="history-badge ${rc}">${rc} risk</div>
+              </div>
+              <div class="history-meta">
+                <div class="history-date">${item.created_at || ''}</div>
+                <div class="history-score">Score: ${item.overall_risk_score}%</div>
+              </div>
             </div>
           </div>
         `;
       }).join('');
 
+      data.forEach(item => setupSwipe(item.id));
+
     } catch (err) {
       list.innerHTML = `
         <div class="history-empty">
-          <div class="history-empty-icon">⚠️</div>
+          <div class="history-empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
           <div>Could not load history</div>
           <div style="margin-top: 6px; font-size: 11px;">Make sure your API is running</div>
         </div>
@@ -1373,10 +1640,93 @@
     }
   }
 
+  function setupSwipe(id) {
+    const item = document.getElementById(`item-${id}`);
+    if (!item) return;
+    let startX = 0, currentX = 0, isDragging = false;
+
+    item.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+    }, { passive: true });
+
+    item.addEventListener('touchmove', e => {
+      if (!isDragging) return;
+      currentX = e.touches[0].clientX - startX;
+      if (currentX < 0) {
+        item.style.transform = `translateX(${Math.max(currentX, -80)}px)`;
+        item.style.transition = 'none';
+      }
+    }, { passive: true });
+
+    item.addEventListener('touchend', () => {
+      isDragging = false;
+      item.style.transition = 'transform 0.3s ease';
+      if (currentX < -40) {
+        item.style.transform = 'translateX(-80px)';
+        item.classList.add('swiped');
+        if (activeSwipeItem && activeSwipeItem !== item) {
+          activeSwipeItem.style.transform = 'translateX(0)';
+          activeSwipeItem.classList.remove('swiped');
+        }
+        activeSwipeItem = item;
+      } else {
+        item.style.transform = 'translateX(0)';
+        item.classList.remove('swiped');
+      }
+      currentX = 0;
+    });
+  }
+
+  function handleItemClick(event, item) {
+    const el = document.getElementById(`item-${item.id}`);
+    if (el && el.classList.contains('swiped')) {
+      el.style.transform = 'translateX(0)';
+      el.classList.remove('swiped');
+      return;
+    }
+    loadHistoryItem(item);
+  }
+
   function loadHistoryItem(item) {
     closeHistory();
     renderResults(item);
     showPage('page-results');
+  }
+
+  function showDeleteConfirm(id) {
+    pendingDeleteId = id;
+    document.getElementById('deleteConfirm').classList.add('active');
+  }
+
+  function cancelDelete() {
+    pendingDeleteId = null;
+    document.getElementById('deleteConfirm').classList.remove('active');
+    if (activeSwipeItem) {
+      activeSwipeItem.style.transform = 'translateX(0)';
+      activeSwipeItem.classList.remove('swiped');
+      activeSwipeItem = null;
+    }
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    document.getElementById('deleteConfirm').classList.remove('active');
+    try {
+      await fetch(`http://127.0.0.1:8000/history/${pendingDeleteId}`, { method: 'DELETE' });
+      const wrapper = document.getElementById(`wrapper-${pendingDeleteId}`);
+      if (wrapper) {
+        wrapper.style.transition = 'all 0.3s';
+        wrapper.style.opacity = '0';
+        wrapper.style.maxHeight = wrapper.offsetHeight + 'px';
+        setTimeout(() => { wrapper.style.maxHeight = '0'; wrapper.style.marginBottom = '0'; }, 10);
+        setTimeout(() => wrapper.remove(), 320);
+      }
+    } catch (err) {
+      console.error('Delete failed', err);
+    }
+    pendingDeleteId = null;
+    activeSwipeItem = null;
   }
 </script>
 </body>
