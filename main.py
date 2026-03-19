@@ -1,10 +1,14 @@
-from fastapi import FastAPI,UploadFile,File
+from fastapi import FastAPI,UploadFile,File,Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from db import get_db
+from models import ContractAnalysis
 from openai import OpenAI
 from enum import Enum 
 from dotenv import load_dotenv
 from docx import Document as DocxDocument
+
 import os
 import pdfplumber
 import io
@@ -68,7 +72,7 @@ def docextract(file_bytes:bytes, filename: str)-> str:
    
 
 @app.post("/analyzeDoc")
-async def analyze(file: UploadFile = File(...)):
+async def analyze(file: UploadFile = File(...), db: Session=Depends(get_db)):
     file_byte = await file.read()
     contract_text = docextract(file_byte, file.filename)
 
@@ -146,4 +150,36 @@ async def analyze(file: UploadFile = File(...)):
     clean = raw.replace("```json", "").replace("```", "").strip()
     result = json.loads(clean)
 
+
+    record=ContractAnalysis(
+        filename=file.filename,
+         overall_risk_score=result.get("overall_risk_score"),
+        overall_risk_level=result.get("overall_risk_level"),
+        summary=result.get("summary"),
+        risks=json.dumps(result.get("risks", []))
+        
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
     return result
+
+@app.get("/histroy")
+def get_histroy(db: Session =Depends(get_db)):
+    records =db.query(ContractAnalysis).order_by(
+        ContractAnalysis.created_at.desc()
+    ).limit(20).all()
+
+    return [
+    {
+        "id": r.id,
+        "filename": r.filename,
+        "overall_risk_score": r.overall_risk_score,
+        "overall_risk_level": r.overall_risk_level,
+        "summary": r.summary,
+        "risks": json.loads(r.risks) if r.risks else [],
+        "created_at": r.created_at.strftime("%b %d, %Y %H:%M") if r.created_at else ""
+    }
+    for r in records
+]
