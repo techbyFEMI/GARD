@@ -52,6 +52,9 @@ class DocAnalysis(BaseModel):
     risks: list[RiskItem]
     summary: str
 
+    @app.get("/check")
+    async def serverStatus():
+        return {"status": "ok"}
 
 def docextract(file_bytes: bytes, filename: str) -> str:
     if filename.endswith(".pdf"):
