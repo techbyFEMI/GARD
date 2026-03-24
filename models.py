@@ -12,6 +12,7 @@ class ContractAnalysis(Base):
     summary=Column(Text)
     risks=Column(Text)
     created_at=Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    file_hash = Column(String, unique=True, index=True)
 
 
 
