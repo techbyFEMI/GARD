@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Depends
+from fastapi import FastAPI, UploadFile, File, Depends, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -91,6 +91,8 @@ def calculate_risk_score(risks: list) -> tuple:
         max_possible += max_points
 
     percentage = round((score / max_possible) * 100) if max_possible > 0 else 0
+    if percentage < 15:
+        percentage = 0
 
     if percentage >= 61:
         level = "high"
@@ -155,20 +157,54 @@ def fallback_response():
     }
 
 @app.post("/analyzeDoc")
-async def analyze(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def analyze(
+    file: UploadFile = File(...),
+    email: str = Form(...),
+    db: Session = Depends(get_db)
+):
     file_byte = await file.read()
     file_hash = hashlib.sha256(file_byte).hexdigest()
 
-    existing = db.query(ContractAnalysis).filter(
+    # Check if this user already has this file analyzed
+    existing_for_user = db.query(ContractAnalysis).filter(
+        ContractAnalysis.file_hash == file_hash,
+        ContractAnalysis.user_email == email
+    ).first()
+
+    if existing_for_user:
+        return {
+            "summary": existing_for_user.summary,
+            "risks": json.loads(existing_for_user.risks),
+            "overall_risk_score": existing_for_user.overall_risk_score,
+            "overall_risk_level": existing_for_user.overall_risk_level,
+            "cached": True
+        }
+
+    # If not for this user, check if ANY user has it (to reuse LLM results)
+    existing_any = db.query(ContractAnalysis).filter(
         ContractAnalysis.file_hash == file_hash
     ).first()
 
-    if existing:
+    if existing_any:
+        # Save a new record for THIS user using the existing data
+        new_record = ContractAnalysis(
+            filename=file.filename,
+            file_hash=file_hash,
+            user_email=email,
+            overall_risk_score=existing_any.overall_risk_score,
+            overall_risk_level=existing_any.overall_risk_level,
+            summary=existing_any.summary,
+            risks=existing_any.risks
+        )
+        db.add(new_record)
+        db.commit()
+        db.refresh(new_record)
+
         return {
-            "summary": existing.summary,
-            "risks": json.loads(existing.risks),
-            "overall_risk_score": existing.overall_risk_score,
-            "overall_risk_level": existing.overall_risk_level,
+            "summary": existing_any.summary,
+            "risks": json.loads(existing_any.risks),
+            "overall_risk_score": existing_any.overall_risk_score,
+            "overall_risk_level": existing_any.overall_risk_level,
             "cached": True
         }
 
@@ -244,6 +280,7 @@ CONTRACT:
     record = ContractAnalysis(
         filename=file.filename,
         file_hash=file_hash,
+        user_email=email,
         overall_risk_score=score,
         overall_risk_level=level,
         summary=result.get("summary"),
@@ -257,8 +294,10 @@ CONTRACT:
     return result
 
 @app.get("/history")
-def get_history(db: Session = Depends(get_db)):
-    records = db.query(ContractAnalysis).order_by(
+def get_history(email: str = Query(...), db: Session = Depends(get_db)):
+    records = db.query(ContractAnalysis).filter(
+        ContractAnalysis.user_email == email
+    ).order_by(
         ContractAnalysis.created_at.desc()
     ).limit(20).all()
 
