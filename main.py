@@ -256,7 +256,7 @@ CONTRACT:
 
     for _ in range(MAX_RETRIES):
         response = client.chat.completions.create(
-            model="arcee-ai/trinity-large-preview:free",
+            model="arcee-ai/trinity-large-thinking:free",
             messages=[
                 {"role": "system", "content": "Return STRICT valid JSON only. No markdown."},
                 {"role": "user", "content": prompt}
