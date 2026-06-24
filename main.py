@@ -1,5 +1,4 @@
 from fastapi import FastAPI, UploadFile, File, Depends, Form, Query
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from db import get_db
@@ -23,13 +22,6 @@ client = OpenAI(
 )
 
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
 
 class Document_riskLevel(str, Enum):
     Low = "low"
