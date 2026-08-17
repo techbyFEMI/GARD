@@ -6,4 +6,4 @@ python-dotenv
 openai
 pdfplumber
 python-docx
-python-multipart
+python-multipart 
